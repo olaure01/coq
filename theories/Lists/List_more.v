@@ -352,42 +352,6 @@ induction l; simpl; intros x y Hneq Hin.
 Qed.
 
 
-(** ** [rev] *)
-
-Lemma app_eq_rev {A} : forall l1 l2 l3 : list A,
-  l1 ++ l2 = rev l3 ->
-    exists l1' l2', l3 = l2' ++ l1' /\ l1 = rev l1' /\ l2 = rev l2'.
-Proof with try assumption ; try reflexivity.
-intros l1 l2 ; revert l1.
-induction l2 using rev_ind ; intros.
-- exists l3 ; exists (@nil A).
-  split ; [ | split]...
-  rewrite app_nil_r in H...
-- destruct l3.
-  + destruct l1 ; destruct l2 ; inversion H.
-  + simpl in H.
-    assert (l1 ++ l2 = rev l3) as Hrev.
-    { rewrite app_assoc in H.
-      remember (l1 ++ l2) as l4.
-      remember (rev l3) as l5.
-      clear - H.
-      revert l4 H ; induction l5 ; intros l4 H.
-      - destruct l4 ; inversion H...
-        destruct l4 ; inversion H2.
-      - destruct l4 ; inversion H.
-        + destruct l5 ; inversion H2.
-        + apply IHl5 in H2 ; subst... }
-    apply IHl2 in Hrev.
-    destruct Hrev as (l1' & l2' & Heq1 & Heq2 & Heq3) ; subst.
-    exists l1' ; exists (x :: l2') ; split ; [ | split ]...
-    rewrite rev_app_distr in H.
-    rewrite <- app_assoc in H.
-    apply app_inv_head in H.
-    apply app_inv_head in H.
-    inversion H ; subst...
-Qed.
-
-
 (** ** Decomposition of [map] *)
 
 Lemma app_eq_map {A B} : forall (f : A -> B) l1 l2 l3,
