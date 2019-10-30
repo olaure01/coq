@@ -450,41 +450,6 @@ Ltac decomp_map H :=
   end.
 
 
-(** ** [concat] *)
-
-Lemma concat_is_nil {A} : forall (L : list (list A)),
-  concat L = nil <-> Forall (fun x => x = nil) L.
-Proof.
-induction L; simpl; split; intros Hc; try constructor.
-- now apply app_eq_nil in Hc.
-- apply IHL; now apply app_eq_nil in Hc.
-- inversion Hc; subst; simpl.
-  now apply IHL.
-Qed.
-
-
-(** ** [flat_map] *)
-
-Lemma flat_map_app {A B} : forall (f : A -> list B) l1 l2,
-  flat_map f (l1 ++ l2) = flat_map f l1 ++ flat_map f l2.
-Proof with try reflexivity.
-intros f l1 l2.
-induction l1...
-simpl.
-rewrite IHl1.
-rewrite app_assoc...
-Qed.
-
-Lemma flat_map_ext : forall (A B : Type) (f g : A -> list B),
-  (forall a, f a = g a) -> forall l, flat_map f l = flat_map g l.
-Proof with try reflexivity.
-intros A B f g Hext.
-induction l...
-simpl.
-rewrite Hext.
-rewrite IHl...
-Qed.
-
 
 (** ** Set inclusion on list *)
 
