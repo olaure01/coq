@@ -905,27 +905,16 @@ Proof with try assumption; try reflexivity.
 Qed.
 
 
-(* seq *)
-
-Lemma seq_cons : forall s l, s :: seq (S s) l = seq s (S l).
-Proof. intros s l; revert s; induction l; intros s; simpl; now rewrite ? IHl. Qed.
-
-Lemma seq_S : forall s l, seq s (S l) = seq s l ++ s + l :: nil.
-Proof.
-intros s l.
-change (s + l :: nil) with (seq (s + l) 1).
-rewrite <- seq_app.
-f_equal; lia.
-Qed.
-
 
 (** ** Definition and properties of the constant list *)
+(* not for stdlib ? *)
 Fixpoint const_list {A} n (a : A) :=
   match n with
   | 0 => nil
   | S n => a :: (const_list n a)
   end.
 
+(* not for stdlib ? *)
 Lemma const_list_length {A} : forall n (a : A),
   length (const_list n a) = n.
 Proof with try reflexivity.
@@ -933,6 +922,7 @@ intros n a; induction n...
 simpl; rewrite IHn...
 Qed.
 
+(* not for stdlib ? *)
 Lemma const_list_cons {A} : forall n (a : A),
   a :: const_list n a = const_list n a ++ (a :: nil).
 Proof with try reflexivity.
@@ -940,6 +930,7 @@ induction n; intros a...
 simpl; rewrite IHn...
 Qed.
 
+(* not for stdlib ? *)
 Lemma const_list_to_concat {A} : forall n (a : A),
   const_list n a = concat (const_list n (a :: nil)).
 Proof with try reflexivity.
@@ -947,6 +938,7 @@ induction n; intros a...
 simpl; rewrite IHn...
 Qed.
 
+(* not for stdlib ? *)
 Lemma In_const_list {A} : forall n (a : A) b,
   In b (const_list n a) -> b = a.
 Proof.
