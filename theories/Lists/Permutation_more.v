@@ -3,13 +3,16 @@
 (** * Add-ons for Permutation library
 Usefull properties apparently missing in the Permutation library. *)
 
-Require Import Psatz.
+Require Import Lia.
 Require Import Plus.
 Require Import Morphisms.
 Require Export Permutation.
 
+Require Import List.
+(*
 Require Import Injective.
 Require Import List_more.
+*)
 
 
 Instance Permutation_refl' {A} : Proper (Logic.eq ==> @Permutation A) id.
@@ -35,7 +38,7 @@ assert (forall P : list A -> Prop,
     rewrite app_comm_cons.
     rewrite app_assoc.
     apply IHPermutation.
-    list_simpl...
+    rewrite <- app_assoc...
   - apply HP...
   - apply IHPermutation2.
     apply IHPermutation1... }
@@ -97,6 +100,7 @@ rewrite 2 app_assoc.
 apply Permutation_cons_app ; reflexivity.
 Qed.
 
+(* TODO requires List_more
 Lemma Permutation_vs_2elts_inv : forall A D (s : A) t G,
   Permutation D (s :: t :: G) -> exists G1 G2 G3,
     D = G1 ++ s :: G2 ++ t :: G3 \/ D = G1 ++ t :: G2 ++ s :: G3.
@@ -119,6 +123,7 @@ rewrite <- ? app_comm_cons.
 - exists D1 ; exists l0 ; exists D4.
   left...
 Qed.
+*)
 
 Lemma Permutation_app_rot {A} : forall (l1 : list A) l2 l3,
   Permutation (l1 ++ l2 ++ l3) (l2 ++ l3 ++ l1).
@@ -263,6 +268,7 @@ revert l2 ; induction HP ; intros l2 HF ; inversion HF ; subst.
   transitivity l2' ; assumption.
 Qed.
 
+(* TODO requires List_more
 Lemma Permutation_map_inv {A B} : forall(f : A -> B) l1 l2,
   Permutation l1 (map f l2) -> exists l3, l1 = map f l3 /\ Permutation l2 l3.
 Proof with try reflexivity ; try assumption.
@@ -289,30 +295,9 @@ induction l1 ; intros l2 HP.
   apply Permutation_cons_app.
   symmetry...
 Qed.
+*)
 
-Lemma Permutation_map_inv_inj {A B} : forall f : A -> B, injective f ->
-  forall l1 l2, Permutation (map f l1) (map f l2) -> Permutation l1 l2.
-Proof with try assumption ; try reflexivity.
-intros f Hi l1 ; induction l1 ; intros l2 HP.
-- apply Permutation_nil in HP.
-  destruct l2 ; inversion HP...
-- assert (Heq := HP).
-  symmetry in Heq.
-  apply Permutation_vs_cons_inv in Heq.
-  destruct Heq as (l3 & l4 & Heq).
-  symmetry in Heq.
-  decomp_map Heq ; subst.
-  rewrite map_app in HP.
-  simpl in HP.
-  rewrite Heq3 in HP.
-  apply Permutation_cons_app_inv in HP.
-  specialize IHl1 with (l0 ++ l6).
-  rewrite map_app in IHl1.
-  apply IHl1 in HP.
-  apply Hi in Heq3 ; subst.
-  apply Permutation_cons_app...
-Qed.
-
+(* TODO requires List_more
 Lemma Permutation_map_inv_inj_local {A B} : forall (f : A -> B) l1 l2,
   (forall x y, In x l1 -> In y l2 -> f x = f y -> x = y) ->
     Permutation (map f l1) (map f l2) -> Permutation l1 l2.
@@ -345,7 +330,9 @@ induction l1 ; intros l2 Hi HP.
       left...
       right ; apply in_cons...
 Qed.
+*)
 
+(* TODO requires List_more
 Lemma Permutation_image {A B} : forall (f : A -> B) a l l',
   Permutation (a :: l) (map f l') -> exists a', a = f a'.
 Proof.
@@ -355,7 +342,9 @@ destruct HP as (l'' & Heq & _).
 destruct l'' ; inversion Heq.
 eexists ; reflexivity.
 Qed.
+*)
 
+(* TODO requires List_more
 Lemma Permutation_elt_map_inv {A B} : forall (f : A -> B) a l1 l2 l3 l4,
   Permutation (l1 ++ a :: l2) (l3 ++ map f l4) ->
   (forall b, a <> f b) -> exists l1' l2', l3 = l1' ++ a :: l2'.
@@ -372,7 +361,9 @@ dichot_elt_app_exec Heq.
   apply Hf in Heq1.
   inversion Heq1.
 Qed.
+*)
 
+(* TODO requires List_more
 Instance Permutation_flat_map {A B} f :
   Proper ((@Permutation A) ==> (@Permutation B)) (flat_map f).
 Proof with try reflexivity ; try eassumption.
@@ -402,7 +393,9 @@ induction l1 ; intros l2 HP.
     rewrite <- ? app_assoc.
     apply Permutation_app_rot.
 Qed.
+*)
 
+(* TODO requires List_more
 Instance list_sum_perm : Proper (@Permutation nat ==> eq) list_sum.
 Proof with try reflexivity.
 intros l1 ; induction l1 ; intros l2 HP.
@@ -418,6 +411,7 @@ intros l1 ; induction l1 ; intros l2 HP.
   rewrite 2 (plus_comm a).
   rewrite plus_assoc...
 Qed.
+*)
 
 
 (** ** Permutation definition based on transpositions for induction with fixed length *)
@@ -490,6 +484,7 @@ induction HP ; intros Hr Ht Htr.
 Qed.
 
 
+(* TODO requires List_more
 Lemma Permutation_list_sum : forall l1 l2,
   Permutation l1 l2 -> list_sum l1 = list_sum l2.
 Proof.
@@ -497,7 +492,9 @@ unfold list_sum.
 intros l1 l2 HP.
 induction HP ; simpl ; intuition ; try lia.
 Qed.
+*)
 
+(* TODO requires List_more
 Lemma Permutation_list_max : forall l1 l2,
   Permutation l1 l2 -> list_max l1 = list_max l2.
 Proof.
@@ -505,3 +502,4 @@ unfold list_max.
 intros l1 l2 HP.
 induction HP ; simpl ; intuition ; try lia.
 Qed.
+*)
