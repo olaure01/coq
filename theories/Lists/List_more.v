@@ -352,36 +352,6 @@ induction l; simpl; intros x y Hneq Hin.
 Qed.
 
 
-(** ** [last] *)
-
-Lemma last_last {A} : forall l (a b : A), last (l ++ (a :: nil)) b = a.
-Proof with try reflexivity.
-induction l ; intros ; simpl...
-rewrite IHl.
-destruct l ; simpl...
-Qed.
-
-Lemma removelast_last {A} : forall l (a : A), removelast (l ++ (a :: nil)) = l.
-Proof with try reflexivity.
-induction l ; intros ; simpl...
-rewrite IHl.
-destruct l ; simpl...
-Qed.
-
-Lemma map_last : forall A B (f : A -> B) l a,
-  map f (l ++ a :: nil) = (map f l) ++ (f a) :: nil.
-Proof with try reflexivity.
-induction l ; intros ; simpl...
-rewrite IHl...
-Qed.
-
-Lemma last_length {A} : forall l (a:A), length (l ++ a :: nil) = S (length l).
-Proof.
-intros ; rewrite app_length ; simpl.
-rewrite plus_comm; reflexivity.
-Qed.
-
-
 (** ** [rev] *)
 
 Lemma app_eq_rev {A} : forall l1 l2 l3 : list A,
