@@ -354,6 +354,7 @@ Qed.
 
 (** ** Decomposition of [map] *)
 
+(* not for stdlib ? *)
 Lemma app_eq_map {A B} : forall (f : A -> B) l1 l2 l3,
   l1 ++ l2 = map f l3 ->
     exists l1' l2', l3 = l1' ++ l2' /\ l1 = map f l1' /\ l2 = map f l2'.
@@ -369,6 +370,7 @@ induction l1 ; intros.
   split ; [ | split]...
 Qed.
 
+(* not for stdlib ? *)
 Lemma cons_eq_map {A B} : forall (f : A -> B) a l2 l3,
   a :: l2 = map f l3 ->
     exists b l2', l3 = b :: l2' /\ a = f b /\ l2 = map f l2'.
@@ -379,6 +381,7 @@ eexists ; eexists ; split ; [ | split] ;
   try reflexivity ; try eassumption.
 Qed.
 
+(* not for stdlib ? *)
 Ltac decomp_map_eq H Heq :=
   match type of H with
   | _ ++ _ = map _ _ => apply app_eq_map in H ;
@@ -401,7 +404,6 @@ Ltac decomp_map_eq H Heq :=
                           decomp_map_eq H2 Heq
   | _ => idtac
   end.
-
 Ltac decomp_map H :=
   match type of H with
   | _ = map _ ?l => let l' := fresh "l" in
@@ -415,44 +417,17 @@ Ltac decomp_map H :=
 
 
 
-(** ** Set inclusion on list *)
-
-Lemma incl_nil {A} : forall l : list A, incl nil l.
-Proof.
-intros l a Hin.
-inversion Hin.
-Qed.
-
-Lemma incl_nil_inv {A} : forall (l : list A), incl l nil -> l = nil.
-Proof. now induction l; intros Hincl; [ | exfalso; apply Hincl with a; constructor ]. Qed.
-
-Lemma incl_app_app {A} : forall l1 l2 m1 m2:list A,
-  incl l1 m1 -> incl l2 m2 -> incl (l1 ++ l2) (m1 ++ m2).
-Proof.
-intros l1 l2 m1 m2 Hi1 Hi2.
-apply incl_app.
-- apply incl_appl.
-  assumption.
-- apply incl_appr.
-  assumption.
-Qed.
-
-Lemma incl_cons_inv {A} : forall (a:A) (l m:list A),
-  incl (a :: l) m -> In a m /\ incl l m.
-Proof.
-intros a l m Hi.
-split.
-- apply Hi.
-  constructor.
-  reflexivity.
-- intros b Hin.
-  apply Hi.
-  apply in_cons.
-  assumption.
-Qed.
-
 
 (** ** [Forall] and [Exists] *)
+
+Lemma Forall_app {A} : forall P (l1 : list A) l2,
+  Forall P l1 -> Forall P l2 -> Forall P (l1 ++ l2).
+Proof with try assumption.
+induction l1 ; intros...
+inversion H ; subst.
+apply IHl1 in H0...
+constructor...
+Qed.
 
 Lemma Forall_app_inv {A} : forall P (l1 : list A) l2,
   Forall P (l1 ++ l2) -> Forall P l1 /\ Forall P l2.
@@ -465,15 +440,6 @@ induction l1 ; intros.
   destruct H3.
   split...
   constructor...
-Qed.
-
-Lemma Forall_app {A} : forall P (l1 : list A) l2,
-  Forall P l1 -> Forall P l2 -> Forall P (l1 ++ l2).
-Proof with try assumption.
-induction l1 ; intros...
-inversion H ; subst.
-apply IHl1 in H0...
-constructor...
 Qed.
 
 Lemma Forall_elt {A} : forall P l1 l2 (a : A), Forall P (l1 ++ a :: l2) -> P a.
