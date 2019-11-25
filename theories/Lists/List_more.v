@@ -249,44 +249,6 @@ Ltac trichot_elt_elt_exec H :=
 
 
 
-
-(** ** [In] *)
-
-Lemma in_elt {A} : forall (a:A) l1 l2, In a (l1 ++ a :: l2).
-Proof.
-intros.
-apply in_or_app.
-right. intuition.
-Qed.
-
-Lemma in_elt_inv {A} : forall (a b : A) l1 l2,
-  In a (l1 ++ b :: l2) -> a = b \/ In a (l1 ++ l2).
-Proof.
-intros.
-apply in_app_or in H.
-destruct H ; intuition.
-destruct H ; intuition.
-Qed.
-
-Lemma in_concat {A} : forall (l : list A) (L : list (list A)) a, In a l -> In l L -> In a (concat L).
-Proof with try assumption; try reflexivity.
-  intros l L a Hin1 Hin2.
-  induction L; inversion Hin2; subst.
-  - clear IHL; induction l; inversion Hin1; subst.
-    + left...
-    + right.
-      apply IHl...
-      left...
-  - simpl.
-    specialize (IHL H).
-    clear - IHL.
-    induction a0...
-    right...
-Qed.
-
-
-(** ** [remove] *)
-
 Lemma remove_cons {A} : forall Hdec l (x : A), remove Hdec x (x :: l) = remove Hdec x l.
 Proof. induction l; simpl; intros x; destruct (Hdec x x); try reflexivity; now exfalso. Qed.
 
@@ -419,6 +381,28 @@ Ltac decomp_map H :=
 
 
 (** ** [Forall] and [Exists] *)
+
+Lemma Forall_fold_right {A} : forall P (l : list A),
+  Forall P l <-> fold_right (fun x Q => and (P x) Q) True l.
+Proof.
+induction l; simpl; split; intros H.
+- constructor.
+- constructor.
+- inversion H as [ | ? ? Ha Hl ]; subst; apply IHl in Hl; now split.
+- destruct H as [Ha Hl]; apply IHl in Hl; now constructor.
+Qed.
+
+Lemma Exists_fold_right {A} : forall P (l : list A),
+  Exists P l <-> fold_right (fun x Q => or (P x) Q) False l.
+Proof.
+induction l; simpl; split; intros H.
+- inversion H.
+- inversion H.
+- inversion H as [ ? ? Ha | ? ? Hl ]; subst.
+  + now left.
+  + apply IHl in Hl; now right.
+- destruct H as [Ha | Hl]; [ | apply IHl in Hl]; now constructor.
+Qed.
 
 Lemma Forall_app {A} : forall P (l1 : list A) l2,
   Forall P l1 -> Forall P l2 -> Forall P (l1 ++ l2).
@@ -558,6 +542,17 @@ induction l ; intros HP ; inversion HP ; subst ;
 - left.
   apply IHl...
 Qed.
+
+(** ** [In] *)
+
+
+Lemma in_flat_map_Exists {A B : Type} : forall (f : A -> list B) x l,
+  In x (flat_map f l) <-> Exists (fun y => In x (f y)) l.
+Proof. intros f x l; rewrite in_flat_map; split; apply Exists_exists. Qed.
+
+Lemma notin_flat_map_Forall {A B : Type} : forall (f : A -> list B) x l,
+  ~ In x (flat_map f l) <-> Forall (fun y => ~ In x (f y)) l.
+Proof. intros f x l; rewrite Forall_Exists_neg; apply not_iff_compat, in_flat_map_Exists. Qed.
 
 
 (** ** Map for functions with two arguments : [map2] *)
