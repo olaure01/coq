@@ -1,7 +1,5 @@
 Require Export List.
-Require Import PeanoNat.
-Require Import Lt Le Plus Max.
-Require Import Lia.
+Require Import PeanoNat Lt Le.
 
 
 (* not for stdlib *)
@@ -314,69 +312,12 @@ Ltac decomp_map H :=
 
 
 
+
+
+
+
+
 (** ** [Forall] and [Exists] *)
-
-Lemma Forall_fold_right {A} : forall P (l : list A),
-  Forall P l <-> fold_right (fun x Q => and (P x) Q) True l.
-Proof.
-induction l; simpl; split; intros H.
-- constructor.
-- constructor.
-- inversion H as [ | ? ? Ha Hl ]; subst; apply IHl in Hl; now split.
-- destruct H as [Ha Hl]; apply IHl in Hl; now constructor.
-Qed.
-
-Lemma Exists_fold_right {A} : forall P (l : list A),
-  Exists P l <-> fold_right (fun x Q => or (P x) Q) False l.
-Proof.
-induction l; simpl; split; intros H.
-- inversion H.
-- inversion H.
-- inversion H as [ ? ? Ha | ? ? Hl ]; subst.
-  + now left.
-  + apply IHl in Hl; now right.
-- destruct H as [Ha | Hl]; [ | apply IHl in Hl]; now constructor.
-Qed.
-
-Lemma Forall_app {A} : forall P (l1 : list A) l2,
-  Forall P l1 -> Forall P l2 -> Forall P (l1 ++ l2).
-Proof with try assumption.
-induction l1 ; intros...
-inversion H ; subst.
-apply IHl1 in H0...
-constructor...
-Qed.
-
-Lemma Forall_app_inv {A} : forall P (l1 : list A) l2,
-  Forall P (l1 ++ l2) -> Forall P l1 /\ Forall P l2.
-Proof with try assumption.
-induction l1 ; intros.
-- split...
-  constructor.
-- inversion H ; subst.
-  apply IHl1 in H3.
-  destruct H3.
-  split...
-  constructor...
-Qed.
-
-Lemma Forall_elt {A} : forall P l1 l2 (a : A), Forall P (l1 ++ a :: l2) -> P a.
-Proof.
-intros P l1 l2 a HF.
-eapply Forall_forall ; try eassumption.
-apply in_elt.
-Qed.
-
-Lemma Forall_nth {A} : forall P l,
-  Forall P l -> forall i (a : A), i < length l -> P (nth i l a).
-Proof with try assumption.
-induction l ; intros.
-- inversion H0.
-- destruct i ; inversion H...
-  simpl in H0.
-  apply IHl...
-  apply lt_S_n...
-Qed.
 
 (* not for stdlib ? *)
 Lemma exists_Forall {A B} : forall (P : A -> B -> Prop) l,
@@ -389,6 +330,7 @@ induction l ; intros ; constructor ;
   eexists...
 Qed.
 
+(* not for stdlib ? *)
 Lemma Forall_image {A B} : forall (f : A -> B) l,
   Forall (fun x => exists y, x = f y) l <-> exists l0, l = map f l0.
 Proof with try reflexivity.
@@ -408,23 +350,6 @@ induction l ; split ; intro H.
     exists l0...
 Qed.
 
-Lemma map_ext_Forall {A B} : forall (f g : A -> B) l,
-  Forall (fun x => f x = g x) l -> map f l = map g l.
-Proof.
-intros ; apply map_ext_in ; apply Forall_forall ; assumption.
-Qed.
-
-Lemma Forall_rev {A} : forall P (l : list A), Forall P l -> Forall P (rev l).
-Proof with try assumption.
-induction l ; intros HP.
-- constructor.
-- inversion HP ; subst.
-  apply IHl in H2.
-  apply Forall_app...
-  constructor...
-  constructor.
-Qed.
-
 (* not for stdlib ? *)
 Lemma inc_Forall {A} : forall (P : nat -> A -> Prop) l i j,
   (forall i j a, P i a -> i <= j -> P j a) ->
@@ -436,49 +361,7 @@ induction l ; intros H Hl ; constructor ; inversion H.
 - apply IHl...
 Qed.
 
-Lemma Exists_app {A} : forall (P : A -> Prop) l1 l2,
-  Exists P l1 \/ Exists P l2 -> Exists P (l1 ++ l2).
-Proof with try assumption.
-induction l1 ; intros...
-- destruct H...
-  inversion H.
-- destruct H.
-  + inversion H ; subst.
-    * apply Exists_cons_hd...
-    * apply Exists_cons_tl.
-      apply IHl1.
-      left...
-  + apply Exists_cons_tl.
-    apply IHl1.
-    right...
-Qed.
-
-Lemma Exists_app_inv {A} : forall (P : A -> Prop) l1 l2,
-  Exists P (l1 ++ l2) -> Exists P l1 \/ Exists P l2.
-Proof with try assumption.
-induction l1 ; intros.
-- right...
-- inversion H ; subst.
-  + left.
-    apply Exists_cons_hd...
-  + apply IHl1 in H1.
-    destruct H1.
-    * left.
-      apply Exists_cons_tl...
-    * right...
-Qed.
-
-Lemma Exists_rev {A} : forall P (l : list A), Exists P l -> Exists P (rev l).
-Proof with try assumption.
-induction l ; intros HP ; inversion HP ; subst ;
-  apply Exists_app.
-- right ; constructor...
-- left.
-  apply IHl...
-Qed.
-
 (** ** [In] *)
-
 
 Lemma in_flat_map_Exists {A B : Type} : forall (f : A -> list B) x l,
   In x (flat_map f l) <-> Exists (fun y => In x (f y)) l.
@@ -538,6 +421,8 @@ induction l1 ; intros.
 Qed.
 
 
+(* TODO HERE *)
+
 (* Properties on nth *)
 Lemma nth_nth {A} : forall (l1 : list nat) (l2 : list A) a0 k0 k,
     k < length l1 ->
@@ -549,7 +434,7 @@ Proof with try assumption; try reflexivity.
     simpl.
     apply IHl1.
     simpl in Hlt.
-    lia.
+    apply lt_S_n; assumption.
 Qed.
 
 Lemma nth_plus {A} : forall (l1 : list A) l2 k0 k,
@@ -599,6 +484,7 @@ Lemma nth_split_Type {A} n l (d:A) : n < length l ->
       exists (a::l1,l2); simpl; now f_equal.
   Qed.
 
+(* not for stdlib ? *)
 (* fold_right *)
 Lemma fold_right_app_assoc2 {A B} f (g : B -> A) h (e : A) l1 l2 :
     (forall x y z, h (g x) (f y z) = f (h (g x) y) z) ->
@@ -615,6 +501,7 @@ induction l1; simpl.
   f_equal; assumption.
 Qed.
 
+(* not for stdlib ? *)
 Lemma fold_right_app_assoc {A} f (e : A) l1 l2 :
   (forall x y z, f x (f y z) = f (f x y) z) -> (forall x, f e x = x) ->
   fold_right f e (l1 ++ l2) = f (fold_right f e l1) (fold_right f e l2).
