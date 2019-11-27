@@ -249,36 +249,9 @@ Ltac trichot_elt_elt_exec H :=
 (** ** Decomposition of [map] *)
 
 (* not for stdlib ? *)
-Lemma app_eq_map {A B} : forall (f : A -> B) l1 l2 l3,
-  l1 ++ l2 = map f l3 ->
-    exists l1' l2', l3 = l1' ++ l2' /\ l1 = map f l1' /\ l2 = map f l2'.
-Proof with try assumption ; try reflexivity.
-intros f.
-induction l1 ; intros.
-- exists (@nil A) ; exists l3.
-  split ; [ | split]...
-- destruct l3 ; inversion H.
-  apply IHl1 in H2.
-  destruct H2 as (? & ? & ? & ? & ?) ; subst.
-  exists (a0::x) ; exists x0.
-  split ; [ | split]...
-Qed.
-
-(* not for stdlib ? *)
-Lemma cons_eq_map {A B} : forall (f : A -> B) a l2 l3,
-  a :: l2 = map f l3 ->
-    exists b l2', l3 = b :: l2' /\ a = f b /\ l2 = map f l2'.
-Proof.
-intros f a l2 l3 H.
-destruct l3 ; inversion H ; subst.
-eexists ; eexists ; split ; [ | split] ;
-  try reflexivity ; try eassumption.
-Qed.
-
-(* not for stdlib ? *)
 Ltac decomp_map_eq H Heq :=
   match type of H with
-  | _ ++ _ = map _ _ => apply app_eq_map in H ;
+  | _ ++ _ = map _ _ => symmetry in H; apply map_eq_app in H ;
                           let l1 := fresh "l" in
                           let l2 := fresh "l" in
                           let H1 := fresh H in
@@ -287,7 +260,7 @@ Ltac decomp_map_eq H Heq :=
                           destruct H as (l1 & l2 & Heq1 & H1 & H2) ;
                           rewrite Heq1 in Heq ; clear Heq1 ;
                           decomp_map_eq H1 Heq ; decomp_map_eq H2 Heq
-  | _ :: _ = map _ _ => apply cons_eq_map in H ;
+  | _ :: _ = map _ _ => symmetry in H; apply map_eq_cons in H ;
                           let x := fresh "x" in
                           let l2 := fresh "l" in
                           let H1 := fresh H in
@@ -318,37 +291,6 @@ Ltac decomp_map H :=
 
 
 (** ** [Forall] and [Exists] *)
-
-(* not for stdlib ? *)
-Lemma exists_Forall {A B} : forall (P : A -> B -> Prop) l,
-  (exists k, Forall (P k) l) -> Forall (fun x => exists k, P k x) l .
-Proof with try eassumption ; try reflexivity.
-induction l ; intros ; constructor ;
-  destruct H as [k H] ; inversion H ; subst.
-- eexists...
-- apply IHl...
-  eexists...
-Qed.
-
-(* not for stdlib ? *)
-Lemma Forall_image {A B} : forall (f : A -> B) l,
-  Forall (fun x => exists y, x = f y) l <-> exists l0, l = map f l0.
-Proof with try reflexivity.
-induction l ; split ; intro H.
-- exists (@nil A)...
-- constructor.
-- inversion H ; subst.
-  destruct H2 as [y Hy] ; subst.
-  apply IHl in H3.
-  destruct H3 as [l0 Hl0] ; subst.
-  exists (y :: l0)...
-- destruct H as [l0 Heq].
-  destruct l0 ; inversion Heq ; subst.
-  constructor.
-  + exists a0...
-  + apply IHl.
-    exists l0...
-Qed.
 
 (* not for stdlib ? *)
 Lemma inc_Forall {A} : forall (P : nat -> A -> Prop) l i j,
