@@ -1499,6 +1499,29 @@ End Fold_Right_Recursor.
       intros f g H l. rewrite filter_map. apply map_ext. assumption.
     Qed.
 
+    Lemma filter_filter_comm : forall (f g : A -> bool) l,
+      filter f (filter g l) = filter g (filter f l).
+    Proof.
+      induction l as [ | z l IHl ]; simpl; trivial.
+      case_eq (f z); case_eq (g z); intros Hg Hf;
+       repeat (rewrite ? Hf, ? Hg; simpl);
+       rewrite IHl; f_equal.
+    Qed.
+
+    Lemma filter_filter_eq : forall (f : A -> bool) l, filter f (filter f l) = filter f l.
+    Proof.
+      induction l as [ | z l IHl ]; simpl; trivial.
+      case_eq (f z); intros Hf; simpl; rewrite ? Hf, IHl; reflexivity.
+    Qed.
+
+    Lemma filter_length : forall (f : A -> bool) l, length (filter f l) <= length l.
+    Proof.
+      induction l as [ | z l IHl ]; simpl; trivial.
+      destruct (f z).
+      - apply (proj1 (Nat.succ_le_mono _ _) IHl).
+      - apply Nat.le_le_succ_r; assumption.
+    Qed.
+
   (*****************)
   (** ** Remove    *)
   (*****************)
@@ -2036,6 +2059,15 @@ Section SetIncl.
         apply incl_appl with l1; [ apply incl_refl | assumption ].
     - apply IHl1.
       now apply incl_cons_inv in Hin.
+  Qed.
+
+  Lemma filter_incl : forall (f : A -> bool) l1 l2,
+    incl l1 l2 -> incl (filter f l1) (filter f l2).
+  Proof.
+    intros f l1 l2 Hincl y Hin.
+    apply filter_In in Hin; destruct Hin as [Hin Hneq].
+    apply Hincl in Hin.
+    now apply filter_In.
   Qed.
 
   Lemma remove_incl (eq_dec : forall x y : A, {x = y} + {x <> y}) : forall l1 l2 x,
