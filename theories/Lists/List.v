@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Setoid.
-Require Import PeanoNat Le Gt Minus Bool Lt.
+Require Import PeanoNat Le Gt Minus Bool Lt Basics.
 
 Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
@@ -328,6 +328,18 @@ Section Facts.
   exists [], l; auto.
   destruct (IHl H) as (l1,(l2,H0)).
   exists (a::l1), l2; simpl. apply f_equal. auto.
+  Qed.
+
+  Corollary in_length : forall (l : list A), (exists a : A, In a l) <-> length l > 0.
+  Proof.
+    split; intros.
+    - destruct (length l) eqn:Hl; intuition.
+      apply length_zero_iff_nil in Hl; subst.
+      destruct H as [a Hin].
+      destruct (in_nil Hin).
+    - destruct l.
+      + inversion H.
+      + exists a. constructor. reflexivity.
   Qed.
 
   Lemma in_elt : forall (x:A) l1 l2, In x (l1 ++ x :: l2).
@@ -689,164 +701,6 @@ Section Elts.
     - intros Heq; inversion Heq.
   Qed.
 
-
-  (*****************)
-  (** ** Remove    *)
-  (*****************)
-
-  Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
-
-  Fixpoint remove (x : A) (l : list A) : list A :=
-    match l with
-      | [] => []
-      | y::tl => if (eq_dec x y) then remove x tl else y::(remove x tl)
-    end.
-
-  Lemma remove_cons : forall x l, remove x (x :: l) = remove x l.
-  Proof.
-    intros x l; simpl; destruct (eq_dec x x); [ reflexivity | now exfalso ].
-  Qed.
-
-  Lemma remove_app : forall x l1 l2,
-    remove x (l1 ++ l2) = remove x l1 ++ remove x l2.
-  Proof.
-    induction l1; intros l2; simpl.
-    - reflexivity.
-    - destruct (eq_dec x a).
-      + apply IHl1.
-      + rewrite <- app_comm_cons; f_equal.
-        apply IHl1.
-  Qed.
-
-  Theorem remove_In : forall (l : list A) (x : A), ~ In x (remove x l).
-  Proof.
-    induction l as [|x l]; auto.
-    intro y; simpl; destruct (eq_dec y x) as [yeqx | yneqx].
-    apply IHl.
-    unfold not; intro HF; simpl in HF; destruct HF; auto.
-    apply (IHl y); assumption.
-  Qed.
-
-  Lemma notin_remove: forall l x, ~ In x l -> remove x l = l.
-  Proof.
-    intros l x; induction l as [|y l]; simpl; intros Hnin.
-    - reflexivity.
-    - destruct (eq_dec x y); subst; intuition.
-      f_equal; assumption.
-  Qed.
-
-  Lemma in_remove: forall l x y, In x (remove y l) -> In x l /\ x <> y.
-  Proof.
-    induction l as [|z l]; intros x y Hin.
-    - inversion Hin.
-    - simpl in Hin.
-      destruct (eq_dec y z) as [Heq|Hneq]; subst; split.
-      + right; now apply IHl with z.
-      + intros Heq; revert Hin; subst; apply remove_In.
-      + inversion Hin; subst; [left; reflexivity|right].
-        now apply IHl with y.
-      + destruct Hin as [Hin|Hin]; subst.
-        * now intros Heq; apply Hneq.
-        * intros Heq; revert Hin; subst; apply remove_In.
-  Qed.
-
-  Lemma in_in_remove : forall l x y, x <> y -> In x l -> In x (remove y l).
-  Proof.
-    induction l as [|z l]; simpl; intros x y Hneq Hin.
-    - apply Hin.
-    - destruct (eq_dec y z); subst.
-      + destruct Hin.
-        * exfalso; now apply Hneq.
-        * now apply IHl.
-      + simpl; destruct Hin; [now left|right].
-        now apply IHl.
-  Qed.
-
-  Lemma remove_remove_comm : forall l x y,
-    remove x (remove y l) = remove y (remove x l).
-  Proof.
-    induction l as [| z l]; simpl; intros x y.
-    - reflexivity.
-    - destruct (eq_dec y z); simpl; destruct (eq_dec x z); try rewrite IHl; auto.
-      + subst; symmetry; apply remove_cons.
-      + simpl; destruct (eq_dec y z); tauto.
-  Qed.
-
-  Lemma remove_remove_eq : forall l x, remove x (remove x l) = remove x l.
-  Proof. intros l x; now rewrite (notin_remove _ _ (remove_In l x)). Qed.
-
-  Lemma remove_length_le : forall l x, length (remove x l) <= length l.
-  Proof.
-    induction l as [|y l IHl]; simpl; intros x; trivial.
-    destruct (eq_dec x y); simpl.
-    - rewrite IHl; constructor; reflexivity.
-    - apply (proj1 (Nat.succ_le_mono _ _) (IHl x)).
-  Qed.
-
-  Lemma remove_length_lt : forall l x, In x l -> length (remove x l) < length l.
-  Proof.
-    induction l as [|y l IHl]; simpl; intros x Hin.
-    - contradiction Hin.
-    - destruct Hin as [-> | Hin].
-      + destruct (eq_dec x x); intuition.
-        apply Nat.lt_succ_r, remove_length_le.
-      + specialize (IHl _ Hin); destruct (eq_dec x y); simpl; auto.
-        now apply Nat.succ_lt_mono in IHl.
-  Qed.
-
-
-  (******************************************)
-  (** ** Counting occurrences of an element *)
-  (******************************************)
-
-  Fixpoint count_occ (l : list A) (x : A) : nat :=
-    match l with
-      | [] => 0
-      | y :: tl =>
-        let n := count_occ tl x in
-        if eq_dec y x then S n else n
-    end.
-
-  (** Compatibility of count_occ with operations on list *)
-  Theorem count_occ_In l x : In x l <-> count_occ l x > 0.
-  Proof.
-    induction l as [|y l]; simpl.
-    - split; [destruct 1 | apply gt_irrefl].
-    - destruct eq_dec as [->|Hneq]; rewrite IHl; intuition.
-  Qed.
-
-  Theorem count_occ_not_In l x : ~ In x l <-> count_occ l x = 0.
-  Proof.
-    rewrite count_occ_In. unfold gt. now rewrite Nat.nlt_ge, Nat.le_0_r.
-  Qed.
-
-  Lemma count_occ_nil x : count_occ [] x = 0.
-  Proof.
-    reflexivity.
-  Qed.
-
-  Theorem count_occ_inv_nil l :
-    (forall x:A, count_occ l x = 0) <-> l = [].
-  Proof.
-    split.
-    - induction l as [|x l]; trivial.
-      intros H. specialize (H x). simpl in H.
-      destruct eq_dec as [_|NEQ]; [discriminate|now elim NEQ].
-    - now intros ->.
-  Qed.
-
-  Lemma count_occ_cons_eq l x y :
-    x = y -> count_occ (x::l) y = S (count_occ l y).
-  Proof.
-    intros H. simpl. now destruct (eq_dec x y).
-  Qed.
-
-  Lemma count_occ_cons_neq l x y :
-    x <> y -> count_occ (x::l) y = count_occ l y.
-  Proof.
-    intros H. simpl. now destruct (eq_dec x y).
-  Qed.
-
 End Elts.
 
 (*******************************)
@@ -1160,25 +1014,6 @@ Section Map.
         exists (a :: l1'), l2'; repeat split.
   Qed.
 
-  (** [map] and count of occurrences *)
-
-  Hypothesis decA: forall x1 x2 : A, {x1 = x2} + {x1 <> x2}.
-  Hypothesis decB: forall y1 y2 : B, {y1 = y2} + {y1 <> y2}.
-  Hypothesis Hfinjective: forall x1 x2: A, (f x1) = (f x2) -> x1 = x2.
-
-  Theorem count_occ_map x l:
-    count_occ decA l x = count_occ decB (map l) (f x).
-  Proof.
-    revert x. induction l as [| a l' Hrec]; intro x; simpl.
-    - reflexivity.
-    - specialize (Hrec x).
-      destruct (decA a x) as [H1|H1], (decB (f a) (f x)) as [H2|H2].
-      + rewrite Hrec. reflexivity.
-      + contradiction H2. rewrite H1. reflexivity.
-      + specialize (Hfinjective H2). contradiction H1.
-      + assumption.
-  Qed.
-
   (** [flat_map] *)
 
   Definition flat_map (f:A -> list B) :=
@@ -1196,25 +1031,24 @@ Section Map.
     rewrite IHl1, app_assoc; reflexivity.
   Qed.
 
-  Lemma in_flat_map : forall (f:A->list B)(l:list A)(y:B),
-    In y (flat_map f l) <-> exists x, In x l /\ In y (f x).
-  Proof.
-    clear f Hfinjective.
-    induction l; simpl; split; intros.
-    contradiction.
-    destruct H as (x,(H,_)); contradiction.
-    destruct (in_app_or _ _ _ H).
-    exists a; auto.
-    destruct (IHl y) as (H1,_); destruct (H1 H0) as (x,(H2,H3)).
-    exists x; auto.
-    apply in_or_app.
-    destruct H as (x,(H0,H1)); destruct H0.
-    subst; auto.
-    right; destruct (IHl y) as (_,H2); apply H2.
-    exists x; auto.
-  Qed.
-
 End Map.
+
+Lemma in_flat_map : forall A B (f:A->list B)(l:list A)(y:B),
+  In y (flat_map f l) <-> exists x, In x l /\ In y (f x).
+Proof.
+  induction l; simpl; split; intros.
+  - contradiction.
+  - destruct H as (x,(H,_)); contradiction.
+  - destruct (in_app_or _ _ _ H).
+    + exists a; auto.
+    + destruct (IHl y) as (H1,_); destruct (H1 H0) as (x,(H2,H3)).
+      exists x; auto.
+  - apply in_or_app.
+    destruct H as (x,(H0,H1)); destruct H0.
+    + subst; auto.
+    + right; destruct (IHl y) as (_,H2); apply H2.
+      exists x; auto.
+Qed.
 
 Lemma flat_map_concat_map : forall A B (f : A -> list B) l,
   flat_map f l = concat (map f l).
@@ -1229,13 +1063,6 @@ Proof.
 intros A B f l; induction l as [|x l IH]; simpl.
 - reflexivity.
 - rewrite map_app, IH; reflexivity.
-Qed.
-
-Lemma remove_concat A (eq_dec : forall x y : A, {x = y}+{x <> y}) : forall l x,
-  remove eq_dec x (concat l) = flat_map (remove eq_dec x) l.
-Proof.
-  intros l x; induction l; [ reflexivity | simpl ].
-  rewrite remove_app, IHl; reflexivity.
 Qed.
 
 Lemma map_id : forall (A :Type) (l : list A),
@@ -1500,6 +1327,48 @@ End Fold_Right_Recursor.
       simpl. rewrite IHl. rewrite filter_app. reflexivity.
     Qed.
 
+  (******************************************)
+  (** ** Counting occurrences of an element *)
+  (******************************************)
+
+    Definition count_if (l : list A) : nat :=
+      length (filter l).
+
+    Lemma in_count_if : forall x, f x = true -> forall l, In x l -> count_if l > 0.
+    Proof.
+      unfold count_if. intros x Hx l Hl.
+      assert (Hin : In x (filter l)).
+      { apply filter_In. split; assumption. }
+      apply in_length. eauto.
+    Qed.
+
+    Lemma count_if_In : forall l, count_if l > 0 -> exists x, In x l /\ f x = true.
+    Proof.
+      unfold count_if. intros l Hl.
+      apply in_length in Hl.
+      destruct Hl as [a Hin].
+      exists a. apply filter_In. assumption.
+    Qed.
+
+    Lemma count_if_nil : count_if [] = 0.
+    Proof. reflexivity. Qed.
+
+    Lemma count_if_cons_true : forall x,
+        f x = true -> forall l, count_if (x :: l) = S (count_if l).
+    Proof.
+      unfold count_if. simpl.
+      intros x Hx. rewrite Hx.
+      reflexivity.
+    Qed.
+
+    Lemma count_if_cons_false : forall x,
+        f x = false -> forall l, count_if (x :: l) = count_if l.
+    Proof.
+      unfold count_if. simpl.
+      intros x Hx. rewrite Hx.
+      reflexivity.
+    Qed.
+
   (** [find] *)
 
     Fixpoint find (l:list A) : option A :=
@@ -1630,8 +1499,197 @@ End Fold_Right_Recursor.
       intros f g H l. rewrite filter_map. apply map_ext. assumption.
     Qed.
 
+  (*****************)
+  (** ** Remove    *)
+  (*****************)
+
+  Definition remove_if (f : A -> bool) : list A -> list A :=
+      filter (compose negb f).
+
+  Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
+
+  Definition remove (x : A) : list A -> list A :=
+      remove_if (fun y => if eq_dec x y then true else false).
+
+  Lemma remove_cons : forall x l, remove x (x :: l) = remove x l.
+  Proof.
+    intros x l; simpl.
+    unfold compose.
+    destruct (eq_dec x x); [ reflexivity | now exfalso ].
+  Qed.
+
+  Lemma remove_app : forall x l1 l2,
+    remove x (l1 ++ l2) = remove x l1 ++ remove x l2.
+  Proof.
+    induction l1; intros l2; simpl.
+    - reflexivity.
+    - unfold compose; destruct (eq_dec x a); simpl; f_equal; apply IHl1.
+  Qed.
+
+  Theorem remove_In : forall (l : list A) (x : A), ~ In x (remove x l).
+  Proof.
+    intros l x Hin.
+    apply filter_In in Hin; destruct Hin as [Hin Hf].
+    unfold compose in Hf.
+    destruct eq_dec; auto.
+    now simpl in Hf.
+  Qed.
+
+  Lemma notin_remove: forall l x, ~ In x l -> remove x l = l.
+  Proof.
+    intros l x; induction l as [|y l]; simpl; intros Hnin.
+    - reflexivity.
+    - unfold compose; destruct (eq_dec x y); simpl; subst; intuition.
+      f_equal; assumption.
+  Qed.
+
+  Lemma in_remove: forall l x y, In x (remove y l) -> In x l /\ x <> y.
+  Proof.
+    induction l as [|z l]; intros x y Hin.
+    - inversion Hin.
+    - simpl in Hin; unfold compose in Hin.
+      destruct (eq_dec y z) as [Heq|Hneq]; subst; split.
+      + right; now apply IHl with z.
+      + intros Heq; revert Hin; subst; apply remove_In.
+      + inversion Hin; subst; [left; reflexivity|right].
+        now apply IHl with y.
+      + destruct Hin as [Hin|Hin]; subst.
+        * now intros Heq; apply Hneq.
+        * intros Heq; revert Hin; subst; apply remove_In.
+  Qed.
+
+  Lemma in_in_remove : forall l x y, x <> y -> In x l -> In x (remove y l).
+  Proof.
+    induction l as [|z l]; simpl; intros x y Hneq Hin.
+    - apply Hin.
+    - unfold compose; destruct (eq_dec y z); subst.
+      + destruct Hin.
+        * exfalso; now apply Hneq.
+        * now apply IHl.
+      + simpl; destruct Hin; [now left|right].
+        now apply IHl.
+  Qed.
+
+  Lemma remove_remove_comm : forall l x y,
+    remove x (remove y l) = remove y (remove x l).
+  Proof.
+    induction l as [| z l]; simpl; intros x y.
+    - reflexivity.
+    - unfold compose; destruct (eq_dec y z); simpl;
+        unfold compose; destruct (eq_dec x z); try rewrite IHl; auto.
+      + subst; symmetry; apply remove_cons.
+      + simpl; unfold compose; destruct (eq_dec y z); tauto.
+  Qed.
+
+  Lemma remove_remove_eq : forall l x, remove x (remove x l) = remove x l.
+  Proof. intros l x; now rewrite (notin_remove _ _ (remove_In l x)). Qed.
+
+  Lemma remove_length_le : forall l x, length (remove x l) <= length l.
+  Proof.
+    induction l as [|y l IHl]; simpl; intros x; trivial.
+    unfold compose; destruct (eq_dec x y); simpl.
+    - rewrite IHl; constructor; reflexivity.
+    - apply (proj1 (Nat.succ_le_mono _ _) (IHl x)).
+  Qed.
+
+  Lemma remove_length_lt : forall l x, In x l -> length (remove x l) < length l.
+  Proof.
+    induction l as [|y l IHl]; simpl; intros x Hin.
+    - contradiction Hin.
+    - destruct Hin as [-> | Hin].
+      + unfold compose; destruct (eq_dec x x); intuition.
+        apply Nat.lt_succ_r, remove_length_le.
+      + specialize (IHl _ Hin); unfold compose; destruct (eq_dec x y); simpl; auto.
+        now apply Nat.succ_lt_mono in IHl.
+  Qed.
+
+  Lemma remove_concat : forall l x, remove x (concat l) = flat_map (remove x) l.
+  Proof.
+    intros l x; induction l; [ reflexivity | simpl ].
+    rewrite remove_app, IHl; reflexivity.
+  Qed.
+
+
+  (******************************************)
+  (** ** Counting occurrences of an element *)
+  (******************************************)
+
+    Definition count_occ (l : list A) (x : A) : nat :=
+      count_if (fun y => if eq_dec x y then true else false) l.
+
+    (** Compatibility of count_occ with operations on list *)
+    Theorem count_occ_In l x : In x l <-> count_occ l x > 0.
+    Proof.
+      split; intros.
+      - apply in_count_if with x; auto.
+        destruct eq_dec; auto.
+      - destruct (count_if_In (fun y => if eq_dec x y then true else false) l); auto.
+        destruct (eq_dec x x0); subst; intuition.
+        discriminate H2.
+    Qed.
+
+    Theorem count_occ_not_In l x : ~ In x l <-> count_occ l x = 0.
+    Proof.
+      rewrite count_occ_In. unfold gt. now rewrite Nat.nlt_ge, Nat.le_0_r.
+    Qed.
+
+    Lemma count_occ_nil x : count_occ [] x = 0.
+    Proof. reflexivity. Qed.
+
+    Theorem count_occ_inv_nil l :
+      (forall x:A, count_occ l x = 0) <-> l = [].
+    Proof.
+      split.
+      - induction l as [|x l]; trivial.
+        intros H. specialize (H x). simpl in H.
+        unfold count_occ in *. unfold count_if in *. simpl in *.
+        destruct eq_dec as [_|NEQ]; [discriminate|now elim NEQ].
+      - now intros ->.
+    Qed.
+
+    Lemma count_occ_cons_eq l x y :
+      x = y -> count_occ (x::l) y = S (count_occ l y).
+    Proof.
+      intros H. unfold count_occ.
+      rewrite count_if_cons_true; auto.
+      destruct eq_dec; auto.
+    Qed.
+
+    Lemma count_occ_cons_neq l x y :
+      x <> y -> count_occ (x::l) y = count_occ l y.
+    Proof.
+      intros H. unfold count_occ.
+      rewrite count_if_cons_false; auto.
+      destruct eq_dec; auto.
+      now elim H.
+    Qed.
+
   End Filtering.
 
+  (** [map] and count of occurrences *)
+  Section Counting.
+
+  Variables  A B : Type.
+  Variable   f   : A -> B.
+  Hypothesis decA: forall x1 x2 : A, {x1 = x2} + {x1 <> x2}.
+  Hypothesis decB: forall y1 y2 : B, {y1 = y2} + {y1 <> y2}.
+  Hypothesis Hfinjective: forall x1 x2: A, (f x1) = (f x2) -> x1 = x2.
+
+  Theorem count_occ_map x l:
+    count_occ decA l x = count_occ decB (map f l) (f x).
+  Proof.
+    unfold count_occ. unfold count_if.
+    revert x. induction l as [| a l' Hrec]; intro x; simpl in *.
+    - reflexivity.
+    - specialize (Hrec x).
+      destruct decA as [H1|H1], decB as [H2|H2]; simpl.
+      + rewrite Hrec. reflexivity.
+      + contradiction H2. rewrite H1. reflexivity.
+      + specialize (Hfinjective H2). contradiction H1.
+      + assumption.
+  Qed.
+
+  End Counting.
 
   (******************************************************)
   (** ** Operations on lists of pairs or lists of lists *)
@@ -2440,13 +2498,16 @@ Section ReDun.
     induction l as [| a l' Hrec].
     - simpl; split; auto. constructor.
     - rewrite NoDup_cons_iff, Hrec, (count_occ_not_In decA). clear Hrec. split.
-      + intros (Ha, H) x. simpl. destruct (decA a x); auto.
-        subst; now rewrite Ha.
+      + unfold count_occ. unfold count_if.
+        intros (Ha, H) x. simpl. destruct decA; auto.
+        simpl. subst; now rewrite Ha.
       + split.
         * specialize (H a). rewrite count_occ_cons_eq in H; trivial.
           now inversion H.
         * intros x. specialize (H x). simpl in *. destruct (decA a x); auto.
-          now apply Nat.lt_le_incl.
+          -- rewrite count_occ_cons_eq in H; auto.
+             now apply Nat.lt_le_incl.
+          -- rewrite count_occ_cons_neq in H; auto.
   Qed.
 
   Theorem NoDup_count_occ' l:
