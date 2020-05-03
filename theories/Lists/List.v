@@ -4187,6 +4187,14 @@ Section Forall2.
   Proof.
     intros. induction l1 in l1', H, H0 |- *; inversion H; subst; simpl; auto.
   Qed.
+
+  Lemma Forall2_length : forall l1 l2,
+    Forall2 l1 l2 -> length l1 = length l2.
+  Proof.
+    intros l1 l2 HF; induction HF; auto.
+    now simpl; rewrite IHHF.
+  Qed.
+
 End Forall2.
 
 Hint Constructors Forall2 : core.
@@ -4238,6 +4246,13 @@ Section Forall2_inf.
     Forall2_inf l1 l1' -> Forall2_inf l2 l2' -> Forall2_inf (l1 ++ l2) (l1' ++ l2').
   Proof.
     intros. induction l1 in l1', X, X0 |- *; inversion X; subst; simpl; auto.
+  Qed.
+
+  Lemma Forall2_inf_length : forall l1 l2,
+    Forall2_inf l1 l2 -> length l1 = length l2.
+  Proof.
+    intros l1 l2 HF; induction HF; auto.
+    now simpl; rewrite IHHF.
   Qed.
 
 End Forall2_inf.
