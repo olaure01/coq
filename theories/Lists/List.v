@@ -1245,6 +1245,18 @@ Section ListOps.
       intros; now apply rev_rect.
     Qed.
 
+    Lemma rev_case_inf (l : list A) : (l = nil) + {'(a, tl) | l = tl ++ [a] }.
+    Proof.
+      induction l using rev_rect; [ left | right ]; auto.
+      now exists (x, l).
+    Qed.
+
+    Lemma rev_case (l : list A) : l = nil \/ exists a tl, l = tl ++ [a].
+    Proof.
+      destruct (rev_case_inf l) as [Heq | [(a, tl) Heq]]; [ left | right ]; auto.
+      now exists a, tl.
+    Qed.
+
   End Reverse_Induction.
 
   (*************************)
